@@ -1,5 +1,13 @@
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework import status
+from rest_framework.exceptions import APIException
+
+
+class InvalidCredentials(APIException):
+    status_code = status.HTTP_401_UNAUTHORIZED
+    default_detail = "Invalid credentials."
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -24,3 +32,15 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("confirmed_password")
         return User.objects.create_user(**validated_data)
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attributes):
+        user = authenticate(username=attributes["username"], password=attributes["password"])
+        if user is None:
+            raise InvalidCredentials
+        attributes["user"] = user
+        return attributes
