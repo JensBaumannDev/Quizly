@@ -5,7 +5,13 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import LoginSerializer, RegistrationSerializer
-from .utils import build_user_data, get_refresh_token, set_access_cookie, set_auth_cookies
+from .utils import (
+    build_user_data,
+    clear_auth_cookies,
+    get_refresh_token,
+    set_access_cookie,
+    set_auth_cookies,
+)
 
 
 class RegisterView(APIView):
@@ -43,4 +49,23 @@ class RefreshView(APIView):
             return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
         response = Response({"detail": "Token refreshed"}, status=status.HTTP_200_OK)
         set_access_cookie(response, refresh_token.access_token)
+        return response
+
+
+class LogoutView(APIView):
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        refresh_token = get_refresh_token(request)
+        if refresh_token is None:
+            response_data = {"detail": "Invalid refresh token."}
+            return Response(response_data, status=status.HTTP_401_UNAUTHORIZED)
+        refresh_token.blacklist()
+        response_data = {
+            "detail": "Log-Out successfully! All Tokens will be deleted. "
+            "Refresh token is now invalid."
+        }
+        response = Response(response_data, status=status.HTTP_200_OK)
+        clear_auth_cookies(response)
         return response

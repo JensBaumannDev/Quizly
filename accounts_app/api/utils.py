@@ -27,3 +27,8 @@ def set_auth_cookies(response, refresh_token):
     response.set_cookie(
         "refresh_token", str(refresh_token), httponly=True, samesite="Lax"
     )
+
+
+def clear_auth_cookies(response):
+    response.delete_cookie("access_token", samesite="Lax")
+    response.delete_cookie("refresh_token", samesite="Lax")
