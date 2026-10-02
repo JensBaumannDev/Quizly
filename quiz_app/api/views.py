@@ -20,7 +20,7 @@ class QuizListView(generics.ListAPIView):
         )
 
 
-class QuizDetailView(generics.RetrieveUpdateAPIView):
+class QuizDetailView(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated, IsQuizOwner]
     queryset = Quiz.objects.prefetch_related("questions")
