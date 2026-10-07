@@ -1,12 +1,34 @@
 from rest_framework import serializers
 
 from quiz_app.models import Question, Quiz
+from quiz_app.services.audio import is_valid_youtube_url
+
+
+class QuizCreateRequestSerializer(serializers.Serializer):
+    url = serializers.URLField()
+
+    def validate(self, attributes):
+        if set(self.initial_data) != {"url"}:
+            raise serializers.ValidationError("Only a YouTube URL is allowed.")
+        return attributes
+
+    def validate_url(self, video_url):
+        if not is_valid_youtube_url(video_url):
+            raise serializers.ValidationError(
+                "A valid YouTube URL is required."
+            )
+        return video_url
 
 
 class QuestionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Question
         fields = ["id", "question_title", "question_options", "answer"]
+
+
+class QuestionCreateResponseSerializer(QuestionSerializer):
+    class Meta(QuestionSerializer.Meta):
+        fields = QuestionSerializer.Meta.fields + ["created_at", "updated_at"]
 
 
 class QuizSerializer(serializers.ModelSerializer):
@@ -23,6 +45,10 @@ class QuizSerializer(serializers.ModelSerializer):
             "video_url",
             "questions",
         ]
+
+
+class QuizCreateResponseSerializer(QuizSerializer):
+    questions = QuestionCreateResponseSerializer(many=True, read_only=True)
 
 
 class QuizUpdateSerializer(QuizSerializer):
