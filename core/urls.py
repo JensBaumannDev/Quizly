@@ -15,10 +15,31 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from drf_yasg.views import get_schema_view
+from rest_framework.permissions import AllowAny
+
+from .documentation import api_info
+
+
+schema_view = get_schema_view(
+    api_info,
+    public=True,
+    permission_classes=[AllowAny],
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/", include("accounts_app.api.urls")),
     path("api/", include("quiz_app.api.urls")),
+    re_path(
+        r"^swagger\.(?P<format>json|yaml)$",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema",
+    ),
+    path(
+        "swagger/",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="swagger-ui",
+    ),
 ]

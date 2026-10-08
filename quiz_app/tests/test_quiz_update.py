@@ -145,3 +145,12 @@ class QuizUpdateEndpointTests(TestCase):
         self.authenticate_user()
         response = self.client.patch("/api/quizzes/999/", {"title": "Updated Quiz"})
         self.assertEqual(response.status_code, 404)
+
+    def test_rejects_put_requests(self):
+        self.authenticate_user()
+        response = self.client.put(
+            self.get_detail_url(self.quiz),
+            {"title": "Replaced Quiz"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 405)

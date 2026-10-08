@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "quiz_app",
     "corsheaders",
     "rest_framework",
+    "drf_yasg",
     "rest_framework_simplejwt.token_blacklist",
 ]
 
@@ -125,6 +126,21 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = "static/"
+
+SWAGGER_SETTINGS = {
+    "DEFAULT_INFO": "core.documentation.api_info",
+    "SECURITY_DEFINITIONS": {
+        "CookieAuth": {
+            "type": "apiKey",
+            "name": "Cookie",
+            "in": "header",
+            "description": "JWT access or refresh token in an HTTP-only cookie.",
+        }
+    },
+    "USE_SESSION_AUTH": False,
+}
+
+SWAGGER_USE_COMPAT_RENDERERS = False
 
 
 # Email

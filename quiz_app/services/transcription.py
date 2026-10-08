@@ -6,6 +6,8 @@ WHISPER_MODEL = "base"
 
 
 def transcribe_audio(audio_path):
+    """Transcribe an existing audio file with Whisper."""
+
     audio_path = Path(audio_path)
     if not audio_path.is_file():
         raise FileNotFoundError(f"Audio file not found: {audio_path}")
@@ -15,6 +17,8 @@ def transcribe_audio(audio_path):
 
 
 def extract_transcript(result):
+    """Extract non-empty transcript text from a Whisper result."""
+
     transcript = result.get("text") if isinstance(result, dict) else None
     if not isinstance(transcript, str) or not transcript.strip():
         raise ValueError("Whisper returned an empty transcript.")
@@ -22,5 +26,7 @@ def extract_transcript(result):
 
 
 def load_whisper_model():
+    """Load the configured Whisper model on demand."""
+
     whisper = import_module("whisper")
     return whisper.load_model(WHISPER_MODEL)

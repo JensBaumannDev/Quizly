@@ -10,28 +10,35 @@ QUESTION_FIELDS = {"question_title", "question_options", "answer"}
 CODE_FENCE_PATTERN = re.compile(
     r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.IGNORECASE | re.DOTALL
 )
-QUIZ_PROMPT_TEMPLATE = """Based on the following transcript, generate a quiz in valid JSON format.
-The quiz must follow this exact structure:
-{{
-  "title": "Create a concise quiz title based on the topic of the transcript.",
-  "description": "Summarize the transcript in no more than 150 characters. Do not include any quiz questions or answers.",
-  "questions": [
-    {{
-      "question_title": "The question goes here.",
-      "question_options": ["Option A", "Option B", "Option C", "Option D"],
-      "answer": "The correct answer from the above options"
-    }}
-  ]
-}}
-Requirements:
-- Generate exactly 10 questions.
-- Each question must have exactly 4 distinct answer options.
-- Only one correct answer is allowed per question, and it must be present in "question_options".
-- The output must be valid JSON and parsable as-is using Python's json.loads.
-- Do not include explanations, comments, or any text outside the JSON.
-
-Transcript:
-{transcript}"""
+QUIZ_PROMPT_TEMPLATE = (
+    "Based on the following transcript, generate a quiz in valid JSON format.\n"
+    "The quiz must follow this exact structure:\n"
+    "{{\n"
+    '  "title": "Create a concise quiz title based on the topic of the '
+    'transcript.",\n'
+    '  "description": "Summarize the transcript in no more than 150 '
+    'characters. Do not include any quiz questions or answers.",\n'
+    '  "questions": [\n'
+    "    {{\n"
+    '      "question_title": "The question goes here.",\n'
+    '      "question_options": '
+    '["Option A", "Option B", "Option C", "Option D"],\n'
+    '      "answer": "The correct answer from the above options"\n'
+    "    }}\n"
+    "  ]\n"
+    "}}\n"
+    "Requirements:\n"
+    "- Generate exactly 10 questions.\n"
+    "- Each question must have exactly 4 distinct answer options.\n"
+    "- Only one correct answer is allowed per question, and it must be present "
+    'in "question_options".\n'
+    "- The output must be valid JSON and parsable as-is using Python's "
+    "json.loads.\n"
+    "- Do not include explanations, comments, or any text outside the JSON.\n"
+    "\n"
+    "Transcript:\n"
+    "{transcript}"
+)
 QUIZ_SCHEMA = {
     "type": "object",
     "required": sorted(QUIZ_FIELDS),
@@ -62,6 +69,8 @@ QUIZ_SCHEMA = {
 
 
 def generate_quiz(transcript, api_key):
+    """Generate and validate quiz data from a transcript."""
+
     validate_generation_input(transcript, api_key)
     client = genai.Client(api_key=api_key)
     response = request_quiz(client, build_quiz_prompt(transcript.strip()))
@@ -69,6 +78,8 @@ def generate_quiz(transcript, api_key):
 
 
 def validate_generation_input(transcript, api_key):
+    """Validate the transcript and Gemini API key."""
+
     if not isinstance(transcript, str) or not transcript.strip():
         raise ValueError("A transcript is required.")
     if not isinstance(api_key, str) or not api_key.strip():
@@ -76,10 +87,14 @@ def validate_generation_input(transcript, api_key):
 
 
 def build_quiz_prompt(transcript):
+    """Append the transcript to the quiz generation instructions."""
+
     return QUIZ_PROMPT_TEMPLATE.format(transcript=transcript)
 
 
 def request_quiz(client, prompt):
+    """Request structured quiz data from Gemini Flash."""
+
     return client.models.generate_content(
         model=GEMINI_MODEL,
         contents=prompt,
@@ -91,6 +106,8 @@ def request_quiz(client, prompt):
 
 
 def parse_quiz_response(response):
+    """Parse and validate the JSON returned by Gemini."""
+
     try:
         quiz_data = json.loads(remove_code_fence(response.text))
     except (AttributeError, TypeError, json.JSONDecodeError) as error:
@@ -100,6 +117,8 @@ def parse_quiz_response(response):
 
 
 def remove_code_fence(response_text):
+    """Remove an optional Markdown code fence from Gemini output."""
+
     if not isinstance(response_text, str):
         return response_text
     match = CODE_FENCE_PATTERN.fullmatch(response_text)
@@ -107,6 +126,8 @@ def remove_code_fence(response_text):
 
 
 def validate_quiz_data(quiz_data):
+    """Validate the quiz fields and number of questions."""
+
     if not isinstance(quiz_data, dict) or set(quiz_data) != QUIZ_FIELDS:
         raise ValueError("Gemini returned invalid quiz fields.")
     validate_text(quiz_data["title"], "title")
@@ -121,6 +142,8 @@ def validate_quiz_data(quiz_data):
 
 
 def validate_question(question):
+    """Validate one generated question and its answer options."""
+
     if not isinstance(question, dict) or set(question) != QUESTION_FIELDS:
         raise ValueError("Gemini returned invalid question fields.")
     validate_text(question["question_title"], "question title")
@@ -132,6 +155,8 @@ def validate_question(question):
 
 
 def valid_options(options):
+    """Return whether four distinct, non-empty options are present."""
+
     return (
         isinstance(options, list)
         and len(options) == 4
@@ -141,5 +166,7 @@ def valid_options(options):
 
 
 def validate_text(value, field_name):
+    """Ensure that a generated text field is not empty."""
+
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"Gemini returned an invalid {field_name}.")
