@@ -19,6 +19,7 @@ The matching frontend is available in a separate repository:
 - [Features](#features)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
 - [Authentication](#authentication)
 - [API Overview](#api-overview)
@@ -72,24 +73,25 @@ backend/
 └── schema.yml          generated OpenAPI schema
 ```
 
-## Getting Started
+## Prerequisites
 
-Quick version, if you just want to get it running on Windows:
+- Python 3.14
+- A Gemini API key created in [Google AI Studio](https://aistudio.google.com/apikey)
+- FFmpeg installed globally and available through the system path
+
+FFmpeg is required by yt-dlp to convert downloaded YouTube audio to MP3. On Windows it can be installed with:
 
 ```powershell
-git clone https://github.com/JensBaumannDev/Quizly.git
-cd Quizly
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-Copy-Item .env.example .env
-python manage.py migrate
-python manage.py runserver
+winget install --id Gyan.FFmpeg -e --source winget
 ```
 
-The API is then available at `http://127.0.0.1:8000/api/`.
+Restart the terminal after the installation and verify that FFmpeg is available:
 
-### Step by step
+```bash
+ffmpeg -version
+```
+
+## Getting Started
 
 **1. Clone the repository**
 
@@ -110,64 +112,47 @@ python -m venv .venv
 | Windows Command Prompt | `.venv\Scripts\activate.bat` |
 | macOS/Linux | `source .venv/bin/activate` |
 
-**3. Install FFmpeg globally**
-
-FFmpeg is required by yt-dlp to convert downloaded YouTube audio to MP3. On Windows it can be installed with:
-
-```powershell
-winget install --id Gyan.FFmpeg -e --source winget
-```
-
-Restart the terminal after the installation and verify that FFmpeg is available:
-
-```bash
-ffmpeg -version
-```
-
-**4. Install the Python dependencies**
+**3. Install the Python dependencies**
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**5. Set up environment variables**
+**4. Set up environment variables**
 
-Copy `.env.example` to `.env`:
+Copy `.env.example` to `.env` on Windows PowerShell:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Add your own Django secret key and Gemini API key:
-
-```env
-SECRET_KEY='YOUR_DJANGO_SECRET_KEY'
-GEMINI_API_KEY='YOUR_GEMINI_API_KEY'
-```
-
-A Django secret key can be generated with:
+On macOS or Linux, use:
 
 ```bash
-python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+cp .env.example .env
 ```
 
-**6. Apply migrations**
+Open `.env` and replace every placeholder value. The example file documents all required variables, including the configurable Gemini model. Supported model names are listed in the [official Gemini model documentation](https://ai.google.dev/gemini-api/docs/models).
+
+**5. Apply migrations**
 
 ```bash
 python manage.py migrate
 ```
 
-**7. Create a superuser (optional)**
+**6. Create a superuser (optional)**
 
 ```bash
 python manage.py createsuperuser
 ```
 
-**8. Run the development server**
+**7. Run the development server**
 
 ```bash
 python manage.py runserver
 ```
+
+The API is then available at `http://127.0.0.1:8000/api/`.
 
 ## Authentication
 
@@ -225,7 +210,8 @@ The pytest configuration automatically generates a terminal coverage report for 
 ## Notes for Local Development
 
 - The database file `db.sqlite3` is not tracked. Running the migrations creates a fresh local database.
-- The `.env` file is not tracked. Never commit the Django secret key or Gemini API key.
+- The `.env` file is not tracked. Never commit secret values.
+- The Gemini model is selected through `GEMINI_MODEL` in `.env`. If a model is temporarily unavailable, choose another supported Gemini Flash model without changing the code.
 - FFmpeg must be installed globally and available through the system path.
 - The Whisper `base` model is downloaded automatically the first time a quiz is generated and is then cached locally.
 - Quiz generation requires an active internet connection for YouTube downloads and Gemini requests.
