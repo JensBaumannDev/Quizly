@@ -9,6 +9,8 @@ YOUTUBE_VIDEO_PATHS = ("/shorts/", "/live/", "/embed/")
 
 
 def is_valid_youtube_url(video_url):
+    """Return whether a URL identifies a supported YouTube video."""
+
     if not isinstance(video_url, str):
         return False
     parsed_url = urlparse(video_url)
@@ -18,6 +20,8 @@ def is_valid_youtube_url(video_url):
 
 
 def has_supported_youtube_host(parsed_url):
+    """Return whether the parsed URL uses a supported YouTube host."""
+
     return (
         parsed_url.scheme in {"http", "https"}
         and parsed_url.netloc.lower() in YOUTUBE_HOSTS
@@ -25,6 +29,8 @@ def has_supported_youtube_host(parsed_url):
 
 
 def has_video_identifier(parsed_url):
+    """Return whether the parsed URL contains a video identifier."""
+
     if parsed_url.netloc.lower() == "youtu.be":
         return bool(parsed_url.path.strip("/"))
     if parsed_url.path == "/watch":
@@ -37,6 +43,8 @@ def has_video_identifier(parsed_url):
 
 
 def download_audio(video_url, audio_directory):
+    """Download a YouTube video's audio track as an MP3 file."""
+
     if not is_valid_youtube_url(video_url):
         raise ValueError("A valid YouTube URL is required.")
     audio_directory.mkdir(parents=True, exist_ok=True)
@@ -46,6 +54,8 @@ def download_audio(video_url, audio_directory):
 
 
 def get_download_options(audio_directory):
+    """Return yt-dlp options for extracting MP3 audio."""
+
     return {
         "format": "bestaudio/best",
         "outtmpl": str(audio_directory / "%(id)s.%(ext)s"),

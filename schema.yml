@@ -1,0 +1,509 @@
+swagger: '2.0'
+info:
+  title: Quizly API
+  description: Backend API for generating and managing AI-powered quizzes.
+  version: v1
+basePath: /api
+consumes:
+- application/json
+produces:
+- application/json
+securityDefinitions:
+  CookieAuth:
+    type: apiKey
+    name: Cookie
+    in: header
+    description: JWT access or refresh token in an HTTP-only cookie.
+security:
+- CookieAuth: []
+paths:
+  /login/:
+    post:
+      operationId: login_create
+      summary: Log in a user
+      description: Validate credentials and set JWT cookies.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Login'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/LoginResponse'
+        '401':
+          description: Invalid credentials.
+        '500':
+          description: Internal server error.
+      tags:
+      - Authentication
+      security: []
+    parameters: []
+  /logout/:
+    post:
+      operationId: logout_create
+      summary: Log out a user
+      description: Blacklist the refresh token and clear JWT cookies.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/DetailResponse'
+        '401':
+          description: Invalid refresh token.
+        '500':
+          description: Internal server error.
+      tags:
+      - Authentication
+      security:
+      - CookieAuth: []
+    parameters: []
+  /quizzes/:
+    get:
+      operationId: quizzes_list
+      summary: List quizzes
+      description: Return all quizzes owned by the authenticated user.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Quiz'
+        '401':
+          description: Authentication is required.
+        '500':
+          description: Internal server error.
+      tags:
+      - Quizzes
+      security:
+      - CookieAuth: []
+    post:
+      operationId: quizzes_create
+      summary: Create a quiz
+      description: Generate a quiz from a YouTube video URL.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/QuizCreateRequest'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/QuizCreateResponse'
+        '400':
+          description: Invalid URL or request data.
+        '401':
+          description: Authentication is required.
+        '500':
+          description: Internal server error.
+      tags:
+      - Quizzes
+      security:
+      - CookieAuth: []
+    parameters: []
+  /quizzes/{id}/:
+    get:
+      operationId: quizzes_read
+      summary: Retrieve a quiz
+      description: Return one quiz owned by the authenticated user.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Quiz'
+        '401':
+          description: Authentication is required.
+        '403':
+          description: The user does not own this quiz.
+        '404':
+          description: Quiz not found.
+        '500':
+          description: Internal server error.
+      tags:
+      - Quizzes
+      security:
+      - CookieAuth: []
+    patch:
+      operationId: quizzes_partial_update
+      summary: Update a quiz
+      description: Update the title or description of an owned quiz.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/QuizUpdate'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/Quiz'
+        '400':
+          description: Invalid update data.
+        '401':
+          description: Authentication is required.
+        '403':
+          description: The user does not own this quiz.
+        '404':
+          description: Quiz not found.
+        '500':
+          description: Internal server error.
+      tags:
+      - Quizzes
+      security:
+      - CookieAuth: []
+    delete:
+      operationId: quizzes_delete
+      summary: Delete a quiz
+      description: Delete one quiz owned by the authenticated user.
+      parameters: []
+      responses:
+        '204':
+          description: Quiz deleted successfully.
+        '401':
+          description: Authentication is required.
+        '403':
+          description: The user does not own this quiz.
+        '404':
+          description: Quiz not found.
+        '500':
+          description: Internal server error.
+      tags:
+      - Quizzes
+      security:
+      - CookieAuth: []
+    parameters:
+    - name: id
+      in: path
+      description: A unique integer value identifying this quiz.
+      required: true
+      type: integer
+  /register/:
+    post:
+      operationId: register_create
+      summary: Register a user
+      description: Create a new Quizly user account.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Registration'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/DetailResponse'
+        '400':
+          description: Invalid registration data.
+        '500':
+          description: Internal server error.
+      tags:
+      - Authentication
+      security: []
+    parameters: []
+  /token/refresh/:
+    post:
+      operationId: token_refresh_create
+      summary: Refresh the access token
+      description: Issue an access token from the refresh cookie.
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/DetailResponse'
+        '401':
+          description: Invalid refresh token.
+        '500':
+          description: Internal server error.
+      tags:
+      - Authentication
+      security:
+      - CookieAuth: []
+    parameters: []
+definitions:
+  Login:
+    required:
+    - username
+    - password
+    type: object
+    properties:
+      username:
+        title: Username
+        type: string
+        minLength: 1
+      password:
+        title: Password
+        type: string
+        minLength: 1
+  UserResponse:
+    required:
+    - username
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      username:
+        title: Username
+        description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+          only.
+        type: string
+        pattern: ^[\w.@+-]+$
+        maxLength: 150
+        minLength: 1
+      email:
+        title: Email address
+        type: string
+        format: email
+        maxLength: 254
+  LoginResponse:
+    required:
+    - detail
+    - user
+    type: object
+    properties:
+      detail:
+        title: Detail
+        type: string
+        minLength: 1
+      user:
+        $ref: '#/definitions/UserResponse'
+  DetailResponse:
+    required:
+    - detail
+    type: object
+    properties:
+      detail:
+        title: Detail
+        type: string
+        minLength: 1
+  Question:
+    required:
+    - question_title
+    - question_options
+    - answer
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      question_title:
+        title: Question title
+        type: string
+        maxLength: 255
+        minLength: 1
+      question_options:
+        title: Question options
+        type: object
+      answer:
+        title: Answer
+        type: string
+        maxLength: 255
+        minLength: 1
+  Quiz:
+    required:
+    - title
+    - description
+    - video_url
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      title:
+        title: Title
+        type: string
+        maxLength: 255
+        minLength: 1
+      description:
+        title: Description
+        type: string
+        minLength: 1
+      created_at:
+        title: Created at
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: Updated at
+        type: string
+        format: date-time
+        readOnly: true
+      video_url:
+        title: Video url
+        type: string
+        format: uri
+        maxLength: 200
+        minLength: 1
+      questions:
+        type: array
+        items:
+          $ref: '#/definitions/Question'
+        readOnly: true
+  QuizCreateRequest:
+    required:
+    - url
+    type: object
+    properties:
+      url:
+        title: Url
+        type: string
+        format: uri
+        minLength: 1
+  QuestionCreateResponse:
+    required:
+    - question_title
+    - question_options
+    - answer
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      question_title:
+        title: Question title
+        type: string
+        maxLength: 255
+        minLength: 1
+      question_options:
+        title: Question options
+        type: object
+      answer:
+        title: Answer
+        type: string
+        maxLength: 255
+        minLength: 1
+      created_at:
+        title: Created at
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: Updated at
+        type: string
+        format: date-time
+        readOnly: true
+  QuizCreateResponse:
+    required:
+    - title
+    - description
+    - video_url
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      title:
+        title: Title
+        type: string
+        maxLength: 255
+        minLength: 1
+      description:
+        title: Description
+        type: string
+        minLength: 1
+      created_at:
+        title: Created at
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: Updated at
+        type: string
+        format: date-time
+        readOnly: true
+      video_url:
+        title: Video url
+        type: string
+        format: uri
+        maxLength: 200
+        minLength: 1
+      questions:
+        type: array
+        items:
+          $ref: '#/definitions/QuestionCreateResponse'
+        readOnly: true
+  QuizUpdate:
+    required:
+    - title
+    - description
+    type: object
+    properties:
+      id:
+        title: ID
+        type: integer
+        readOnly: true
+      title:
+        title: Title
+        type: string
+        maxLength: 255
+        minLength: 1
+      description:
+        title: Description
+        type: string
+        minLength: 1
+      created_at:
+        title: Created at
+        type: string
+        format: date-time
+        readOnly: true
+      updated_at:
+        title: Updated at
+        type: string
+        format: date-time
+        readOnly: true
+      video_url:
+        title: Video url
+        type: string
+        format: uri
+        readOnly: true
+        minLength: 1
+      questions:
+        type: array
+        items:
+          $ref: '#/definitions/Question'
+        readOnly: true
+  Registration:
+    required:
+    - username
+    - email
+    - password
+    - confirmed_password
+    type: object
+    properties:
+      username:
+        title: Username
+        description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+          only.
+        type: string
+        pattern: ^[\w.@+-]+$
+        maxLength: 150
+        minLength: 1
+      email:
+        title: Email
+        type: string
+        format: email
+        minLength: 1
+      password:
+        title: Password
+        type: string
+        minLength: 1
+      confirmed_password:
+        title: Confirmed password
+        type: string
+        minLength: 1

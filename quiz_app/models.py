@@ -2,6 +2,8 @@ from django.db import models
 
 
 class Quiz(models.Model):
+    """Store a generated quiz owned by a user."""
+
     user = models.ForeignKey(
         "auth.User", on_delete=models.CASCADE, related_name="quizzes"
     )
@@ -13,6 +15,8 @@ class Quiz(models.Model):
 
 
 class Question(models.Model):
+    """Store a generated question belonging to a quiz."""
+
     quiz = models.ForeignKey(
         Quiz, on_delete=models.CASCADE, related_name="questions"
     )
@@ -21,5 +25,3 @@ class Question(models.Model):
     answer = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-# Create your models here.
