@@ -4,7 +4,6 @@ import re
 from google import genai
 
 
-GEMINI_MODEL = "gemini-3.8-flash"
 QUIZ_FIELDS = {"title", "description", "questions"}
 QUESTION_FIELDS = {"question_title", "question_options", "answer"}
 CODE_FENCE_PATTERN = re.compile(
@@ -68,22 +67,25 @@ QUIZ_SCHEMA = {
 }
 
 
-def generate_quiz(transcript, api_key):
+def generate_quiz(transcript, api_key, model):
     """Generate and validate quiz data from a transcript."""
 
-    validate_generation_input(transcript, api_key)
+    validate_generation_input(transcript, api_key, model)
     client = genai.Client(api_key=api_key)
-    response = request_quiz(client, build_quiz_prompt(transcript.strip()))
+    prompt = build_quiz_prompt(transcript.strip())
+    response = request_quiz(client, prompt, model.strip())
     return parse_quiz_response(response)
 
 
-def validate_generation_input(transcript, api_key):
-    """Validate the transcript and Gemini API key."""
+def validate_generation_input(transcript, api_key, model):
+    """Validate the transcript and Gemini configuration."""
 
     if not isinstance(transcript, str) or not transcript.strip():
         raise ValueError("A transcript is required.")
     if not isinstance(api_key, str) or not api_key.strip():
         raise ValueError("A Gemini API key is required.")
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError("A Gemini model is required.")
 
 
 def build_quiz_prompt(transcript):
@@ -92,11 +94,11 @@ def build_quiz_prompt(transcript):
     return QUIZ_PROMPT_TEMPLATE.format(transcript=transcript)
 
 
-def request_quiz(client, prompt):
+def request_quiz(client, prompt, model):
     """Request structured quiz data from Gemini Flash."""
 
     return client.models.generate_content(
-        model=GEMINI_MODEL,
+        model=model,
         contents=prompt,
         config={
             "response_mime_type": "application/json",

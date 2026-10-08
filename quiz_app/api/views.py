@@ -52,7 +52,7 @@ class QuizListView(generics.ListAPIView):
         """Generate, serialize, and return a quiz for the user."""
         try:
             quiz = create_quiz_from_video(
-                user, video_url, settings.GEMINI_API_KEY
+                user, video_url, settings.GEMINI_API_KEY, settings.GEMINI_MODEL
             )
         except Exception:
             logger.exception("Quiz generation failed.")

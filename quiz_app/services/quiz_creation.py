@@ -9,13 +9,13 @@ from quiz_app.services.quiz_generation import generate_quiz
 from quiz_app.services.transcription import transcribe_audio
 
 
-def create_quiz_from_video(user, video_url, api_key):
+def create_quiz_from_video(user, video_url, api_key, model):
     """Create and save a quiz from a YouTube video."""
 
     with TemporaryDirectory() as temporary_directory:
         audio_path = download_audio(video_url, Path(temporary_directory))
         transcript = transcribe_audio(audio_path)
-        quiz_data = generate_quiz(transcript, api_key)
+        quiz_data = generate_quiz(transcript, api_key, model)
     return save_quiz(user, video_url, quiz_data)
 
 

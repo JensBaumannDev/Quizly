@@ -6,12 +6,13 @@ from unittest.mock import patch
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.db import IntegrityError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from rest_framework_simplejwt.tokens import AccessToken
 
 from quiz_app.models import Question, Quiz
 
 
+@override_settings(GEMINI_MODEL="gemini-3.5-flash-lite")
 class QuizCreateEndpointTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="quiz_user")
@@ -98,7 +99,9 @@ class QuizCreateEndpointTests(TestCase):
         self.download_audio.assert_called_once_with(self.video_url, audio_directory)
         self.transcribe_audio.assert_called_once_with(Path("video123.mp3"))
         self.generate_quiz.assert_called_once_with(
-            "Python transcript", settings.GEMINI_API_KEY
+            "Python transcript",
+            settings.GEMINI_API_KEY,
+            settings.GEMINI_MODEL,
         )
         self.assertFalse(audio_directory.exists())
 

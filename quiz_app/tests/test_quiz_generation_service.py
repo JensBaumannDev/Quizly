@@ -8,6 +8,7 @@ from quiz_app.services.quiz_generation import generate_quiz
 
 class QuizGenerationTests(SimpleTestCase):
     def setUp(self):
+        self.model = "gemini-3.5-flash-lite"
         self.quiz_data = {
             "title": "Python Basics",
             "description": "A quiz about Python fundamentals.",
@@ -29,7 +30,7 @@ class QuizGenerationTests(SimpleTestCase):
 
     def assert_generation_request(self, client):
         request = client.models.generate_content.call_args.kwargs
-        self.assertEqual(request["model"], "gemini-3.8-flash")
+        self.assertEqual(request["model"], self.model)
         self.assertIn("Python transcript", request["contents"])
         self.assertEqual(request["config"]["response_mime_type"], "application/json")
         schema = request["config"]["response_json_schema"]
@@ -45,7 +46,7 @@ class QuizGenerationTests(SimpleTestCase):
     def test_generates_validated_quiz(self, client_class):
         client = client_class.return_value
         client.models.generate_content.return_value = self.create_response()
-        result = generate_quiz("Python transcript", "api-key")
+        result = generate_quiz("Python transcript", "api-key", self.model)
         self.assertEqual(result, self.quiz_data)
         client_class.assert_called_once_with(api_key="api-key")
         self.assert_generation_request(client)
@@ -54,7 +55,7 @@ class QuizGenerationTests(SimpleTestCase):
     def test_prompt_contains_da_requirements_and_ends_with_transcript(self, client_class):
         client = client_class.return_value
         client.models.generate_content.return_value = self.create_response()
-        generate_quiz("Python transcript", "api-key")
+        generate_quiz("Python transcript", "api-key", self.model)
         prompt = client.models.generate_content.call_args.kwargs["contents"]
         self.assertIn("exactly 10 questions", prompt)
         self.assertIn("exactly 4 distinct answer options", prompt)
@@ -71,21 +72,28 @@ class QuizGenerationTests(SimpleTestCase):
                 client.models.generate_content.return_value.text = (
                     f"{opening_fence}\n{quiz_json}\n```"
                 )
-                result = generate_quiz("Python transcript", "api-key")
+                result = generate_quiz("Python transcript", "api-key", self.model)
                 self.assertEqual(result, self.quiz_data)
 
     @patch("quiz_app.services.quiz_generation.genai.Client")
     def test_rejects_blank_transcript(self, client_class):
         for transcript in ["  ", None, 123, []]:
             with self.subTest(transcript=transcript), self.assertRaises(ValueError):
-                generate_quiz(transcript, "api-key")
+                generate_quiz(transcript, "api-key", self.model)
         client_class.assert_not_called()
 
     @patch("quiz_app.services.quiz_generation.genai.Client")
     def test_rejects_missing_api_key(self, client_class):
         for api_key in ["", "  ", None, 123]:
             with self.subTest(api_key=api_key), self.assertRaises(ValueError):
-                generate_quiz("Python transcript", api_key)
+                generate_quiz("Python transcript", api_key, self.model)
+        client_class.assert_not_called()
+
+    @patch("quiz_app.services.quiz_generation.genai.Client")
+    def test_rejects_missing_model(self, client_class):
+        for model in ["", "  ", None, 123]:
+            with self.subTest(model=model), self.assertRaises(ValueError):
+                generate_quiz("Python transcript", "api-key", model)
         client_class.assert_not_called()
 
     @patch("quiz_app.services.quiz_generation.genai.Client")
@@ -95,14 +103,14 @@ class QuizGenerationTests(SimpleTestCase):
             with self.subTest(response_text=response_text):
                 client.models.generate_content.return_value.text = response_text
                 with self.assertRaises(ValueError):
-                    generate_quiz("Python transcript", "api-key")
+                    generate_quiz("Python transcript", "api-key", self.model)
 
     def assert_rejects_quiz_data(self, quiz_data):
         with patch("quiz_app.services.quiz_generation.genai.Client") as client_class:
             client = client_class.return_value
             client.models.generate_content.return_value = self.create_response(quiz_data)
             with self.assertRaises(ValueError):
-                generate_quiz("Python transcript", "api-key")
+                generate_quiz("Python transcript", "api-key", self.model)
 
     def test_rejects_missing_quiz_fields(self):
         for field in ["title", "description", "questions"]:
@@ -199,11 +207,11 @@ class QuizGenerationTests(SimpleTestCase):
     def test_propagates_client_creation_errors(self, client_class):
         client_class.side_effect = RuntimeError("Failed")
         with self.assertRaises(RuntimeError):
-            generate_quiz("Python transcript", "api-key")
+            generate_quiz("Python transcript", "api-key", self.model)
 
     @patch("quiz_app.services.quiz_generation.genai.Client")
     def test_propagates_gemini_errors(self, client_class):
         client = client_class.return_value
         client.models.generate_content.side_effect = RuntimeError("Failed")
         with self.assertRaises(RuntimeError):
-            generate_quiz("Python transcript", "api-key")
+            generate_quiz("Python transcript", "api-key", self.model)
